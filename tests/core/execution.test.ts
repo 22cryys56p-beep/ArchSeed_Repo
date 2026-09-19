@@ -79,4 +79,34 @@ describe("execution", () => {
     expect(state.count).toBe(0);
     expect(notifications).toBe(0);
   });
+
+  it("does not expose mutation through state observation", () => {
+    const state: CounterState = { count: 0 };
+    const notifier = createStateChangeNotifier();
+
+    const inspect: Operation<
+      IncrementRequest,
+      CounterState,
+      Dependencies
+    > = (_request, context) => {
+      const observed = context.state.get();
+
+      expect(observed.count).toBe(0);
+
+      return { status: "success" };
+    };
+
+    const outcome = execute(
+      inspect,
+      { amount: 0 },
+      {
+        state,
+        dependencies: {},
+        notifier,
+      }
+    );
+
+    expect(outcome).toEqual({ status: "success" });
+    expect(state.count).toBe(0);
+  });
 });

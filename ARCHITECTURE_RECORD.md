@@ -4,9 +4,9 @@ Lightweight, append-only log of architectural decisions for this project.
 
 Each entry is an **Architecture Change Proposal (ACP)**.
 
-| ID     | Title | Status   | Resolution |
+| ID | Title | Status | Resolution |
 |--------|-------|----------|------------|
-|        |       |          |            |
+| ACP-001 | State observation and mutation authority | Accepted | `get()` provides read access through `Readonly<State>`; `mutate()` provides controlled mutation. ArchSeed does not prescribe deep immutability or a particular application state model. |
 
 **Status values**: `Proposed` · `Accepted` · `Resolved`
 

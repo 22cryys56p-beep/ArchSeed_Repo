@@ -1,7 +1,7 @@
 import type { Outcome } from "./outcome";
 
 export type StateAuthority<State> = {
-  get(): State;
+  get(): Readonly<State>;
   mutate(mutator: (state: State) => void): void;
 };
 

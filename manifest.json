@@ -1,0 +1,10 @@
+{
+  "id": "obsidian-app-kernel",
+  "name": "Obsidian App Kernel",
+  "version": "0.1.0",
+  "minAppVersion": "1.5.0",
+  "description": "Reusable architectural kernel for portable Obsidian-based applications. Data and logic never import the host framework.",
+  "author": "",
+  "authorUrl": "",
+  "isDesktopOnly": false
+}

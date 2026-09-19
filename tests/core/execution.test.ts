@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { execute } from "../../src/core/execution";
+import { createStateChangeNotifier } from "../../src/core/notification";
 import type { Operation } from "../../src/core/operation";
 
 type CounterState = {
@@ -31,47 +32,51 @@ const increment: Operation<
 describe("execution", () => {
   it("executes an operation against controlled state", () => {
     const state: CounterState = { count: 0 };
+    const notifier = createStateChangeNotifier();
 
-    const authority = {
-      get: () => state,
-      mutate: (mutator: (state: CounterState) => void) => {
-        mutator(state);
-      },
-    };
+    let notifications = 0;
+
+    notifier.subscribe(() => {
+      notifications += 1;
+    });
 
     const outcome = execute(
       increment,
       { amount: 1 },
       {
-        state: authority,
+        state,
         dependencies: {},
+        notifier,
       }
     );
 
     expect(outcome).toEqual({ status: "success" });
     expect(state.count).toBe(1);
+    expect(notifications).toBe(1);
   });
 
-  it("returns noop without changing state", () => {
+  it("returns noop without changing state or notifying", () => {
     const state: CounterState = { count: 0 };
+    const notifier = createStateChangeNotifier();
 
-    const authority = {
-      get: () => state,
-      mutate: (mutator: (state: CounterState) => void) => {
-        mutator(state);
-      },
-    };
+    let notifications = 0;
+
+    notifier.subscribe(() => {
+      notifications += 1;
+    });
 
     const outcome = execute(
       increment,
       { amount: 0 },
       {
-        state: authority,
+        state,
         dependencies: {},
+        notifier,
       }
     );
 
     expect(outcome).toEqual({ status: "noop" });
     expect(state.count).toBe(0);
+    expect(notifications).toBe(0);
   });
 });

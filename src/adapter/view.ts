@@ -2,19 +2,17 @@
  * Adapter layer — thin ItemView shell.
  *
  * This is one of the only places allowed to import from "obsidian".
- * It owns the controller's lifetime (create in onOpen, drop in onClose)
- * and supplies the injected EntityProvider. Real behavior stays in core.
+ * Real behavior stays in core. This file currently owns no controller —
+ * the earlier generic Controller abstraction was deliberately removed
+ * (see ArchSeed_Working_Notes) as too broad an orchestration layer.
+ * Wiring a real data source back in is future work, not done here.
  */
 
 import { ItemView, type WorkspaceLeaf } from "obsidian";
-import { KernelController } from "../core/controller";
-import type { Entity } from "../data/record";
 
 export const KERNEL_VIEW_TYPE = "obsidian-app-kernel-view";
 
 export class KernelView extends ItemView {
-  private controller: KernelController | null = null;
-
   constructor(leaf: WorkspaceLeaf) {
     super(leaf);
   }
@@ -28,12 +26,6 @@ export class KernelView extends ItemView {
   }
 
   async onOpen(): Promise<void> {
-    // Placeholder provider — replace with real vault / cache integration
-    // when you define the application's data model.
-    const provider = (): readonly Entity[] => [];
-
-    this.controller = new KernelController(provider);
-
     const root = this.containerEl.children[1] as HTMLElement;
     root.empty();
     root.addClass("kernel-view-root");
@@ -47,7 +39,5 @@ export class KernelView extends ItemView {
     hint.style.margin = "0 1rem 1rem";
   }
 
-  async onClose(): Promise<void> {
-    this.controller = null;
-  }
+  async onClose(): Promise<void> {}
 }

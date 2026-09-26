@@ -6,7 +6,7 @@ A minimal, reusable architectural starter for building **portable Obsidian-based
 
 > **Data and logic never import the host framework. The adapter layer is the only place that's allowed to.**
 
-This is the actual Kernel. Everything else is scaffolding around it.
+This is the actual ArchSeed. Everything else is scaffolding around it.
 
 | Layer       | Location       | Rule                                                                                                                           |
 | ----------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------ |

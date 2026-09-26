@@ -49,7 +49,7 @@ export type CreateQuestDetails = {
   reason: "duplicate_id" | "missing_title";
 };
 
-export const createQuest: Operation
+export const createQuest: Operation<
   CreateQuestRequest,
   CampaignState,
   CampaignDependencies,
@@ -84,7 +84,7 @@ export type StartQuestDetails = {
   reason: "not_found" | "already_completed";
 };
 
-export const startQuest: Operation
+export const startQuest: Operation<
   StartQuestRequest,
   CampaignState,
   CampaignDependencies,
@@ -124,7 +124,7 @@ export type CompleteQuestDetails = {
   reason: "not_found" | "not_started";
 };
 
-export const completeQuest: Operation
+export const completeQuest: Operation<
   CompleteQuestRequest,
   CampaignState,
   CampaignDependencies,
@@ -165,7 +165,7 @@ export type AssignQuestDetails = {
   reason: "quest_not_found" | "character_not_found";
 };
 
-export const assignQuest: Operation
+export const assignQuest: Operation<
   AssignQuestRequest,
   CampaignState,
   CampaignDependencies,

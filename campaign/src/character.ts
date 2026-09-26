@@ -32,7 +32,7 @@ export type CreateCharacterDetails = {
   reason: "duplicate_id" | "missing_name";
 };
 
-export const createCharacter: Operation
+export const createCharacter: Operation<
   CreateCharacterRequest,
   CampaignState,
   CampaignDependencies,

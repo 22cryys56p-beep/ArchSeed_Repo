@@ -9,10 +9,12 @@
 
 import type { Quest } from "./quest";
 import type { Character } from "./character";
+import type { Session } from "./session";
 
 export type CampaignState = {
   quests: Quest[];
   characters: Character[];
+  sessions: Session[];
 };
 
 // No external dependencies needed yet.

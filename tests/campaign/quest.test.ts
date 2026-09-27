@@ -10,7 +10,7 @@ import {
 } from "../../campaign/src/quest";
 
 function emptyCampaign(): CampaignState {
-  return { quests: [], characters: [] };
+  return { quests: [], characters: [], sessions: [] };
 }
 
 describe("createQuest", () => {
@@ -28,15 +28,16 @@ describe("createQuest", () => {
 
     expect(outcome).toEqual({ status: "success" });
     expect(state.quests).toEqual([
-      { id: "q1", title: "Rescue the merchant", status: "not_started" },
+      { id: "q1", title: "Rescue the merchant", status: "not_started", xpReward: 0 },
     ]);
     expect(notifications).toBe(1);
   });
 
   it("rejects a duplicate id as invalid, without notifying", () => {
     const state: CampaignState = {
-      quests: [{ id: "q1", title: "Existing", status: "not_started" }],
+      quests: [{ id: "q1", title: "Existing", status: "not_started", xpReward: 0 }],
       characters: [],
+      sessions: [],
     };
     const notifier = createStateChangeNotifier();
     let notifications = 0;
@@ -80,8 +81,9 @@ describe("createQuest", () => {
 describe("startQuest", () => {
   it("moves a not_started quest to active", () => {
     const state: CampaignState = {
-      quests: [{ id: "q1", title: "Rescue the merchant", status: "not_started" }],
+      quests: [{ id: "q1", title: "Rescue the merchant", status: "not_started", xpReward: 0 }],
       characters: [],
+      sessions: [],
     };
     const notifier = createStateChangeNotifier();
     let notifications = 0;
@@ -100,8 +102,9 @@ describe("startQuest", () => {
 
   it("returns noop for an already-active quest, without notifying", () => {
     const state: CampaignState = {
-      quests: [{ id: "q1", title: "Rescue the merchant", status: "active" }],
+      quests: [{ id: "q1", title: "Rescue the merchant", status: "active", xpReward: 0 }],
       characters: [],
+      sessions: [],
     };
     const notifier = createStateChangeNotifier();
     let notifications = 0;
@@ -120,8 +123,9 @@ describe("startQuest", () => {
 
   it("rejects starting an already-completed quest as invalid", () => {
     const state: CampaignState = {
-      quests: [{ id: "q1", title: "Rescue the merchant", status: "completed" }],
+      quests: [{ id: "q1", title: "Rescue the merchant", status: "completed", xpReward: 0 }],
       characters: [],
+      sessions: [],
     };
     const notifier = createStateChangeNotifier();
 
@@ -158,8 +162,9 @@ describe("startQuest", () => {
 describe("completeQuest", () => {
   it("moves an active quest to completed", () => {
     const state: CampaignState = {
-      quests: [{ id: "q1", title: "Rescue the merchant", status: "active" }],
+      quests: [{ id: "q1", title: "Rescue the merchant", status: "active", xpReward: 0 }],
       characters: [],
+      sessions: [],
     };
     const notifier = createStateChangeNotifier();
     let notifications = 0;
@@ -178,8 +183,9 @@ describe("completeQuest", () => {
 
   it("returns noop for an already-completed quest, without notifying", () => {
     const state: CampaignState = {
-      quests: [{ id: "q1", title: "Rescue the merchant", status: "completed" }],
+      quests: [{ id: "q1", title: "Rescue the merchant", status: "completed", xpReward: 0 }],
       characters: [],
+      sessions: [],
     };
     const notifier = createStateChangeNotifier();
     let notifications = 0;
@@ -197,8 +203,9 @@ describe("completeQuest", () => {
 
   it("rejects completing a quest that was never started", () => {
     const state: CampaignState = {
-      quests: [{ id: "q1", title: "Rescue the merchant", status: "not_started" }],
+      quests: [{ id: "q1", title: "Rescue the merchant", status: "not_started", xpReward: 0 }],
       characters: [],
+      sessions: [],
     };
     const notifier = createStateChangeNotifier();
 
@@ -230,13 +237,98 @@ describe("completeQuest", () => {
       details: { reason: "not_found" },
     });
   });
+
+  it("grants xpReward to the assigned character on completion", () => {
+    const state: CampaignState = {
+      quests: [
+        {
+          id: "q1",
+          title: "Rescue the merchant",
+          status: "active",
+          assignedCharacterId: "c1",
+          xpReward: 50,
+        },
+      ],
+      characters: [{ id: "c1", name: "Alira", xp: 10 }],
+      sessions: [],
+    };
+    const notifier = createStateChangeNotifier();
+    let notifications = 0;
+    notifier.subscribe(() => (notifications += 1));
+
+    const outcome = execute(
+      completeQuest,
+      { id: "q1" },
+      { state, dependencies: {}, notifier }
+    );
+
+    expect(outcome).toEqual({ status: "success" });
+    expect(state.quests[0].status).toBe("completed");
+    expect(state.characters[0].xp).toBe(60);
+    expect(notifications).toBe(1);
+  });
+
+  it("does not touch any character when the quest has no assignment", () => {
+    const state: CampaignState = {
+      quests: [
+        {
+          id: "q1",
+          title: "Rescue the merchant",
+          status: "active",
+          xpReward: 50,
+        },
+      ],
+      characters: [{ id: "c1", name: "Alira", xp: 10 }],
+      sessions: [],
+    };
+    const notifier = createStateChangeNotifier();
+
+    const outcome = execute(
+      completeQuest,
+      { id: "q1" },
+      { state, dependencies: {}, notifier }
+    );
+
+    expect(outcome).toEqual({ status: "success" });
+    expect(state.characters[0].xp).toBe(10);
+  });
+
+  it("does not grant xp again when completing an already-completed quest", () => {
+    const state: CampaignState = {
+      quests: [
+        {
+          id: "q1",
+          title: "Rescue the merchant",
+          status: "completed",
+          assignedCharacterId: "c1",
+          xpReward: 50,
+        },
+      ],
+      characters: [{ id: "c1", name: "Alira", xp: 60 }],
+      sessions: [],
+    };
+    const notifier = createStateChangeNotifier();
+    let notifications = 0;
+    notifier.subscribe(() => (notifications += 1));
+
+    const outcome = execute(
+      completeQuest,
+      { id: "q1" },
+      { state, dependencies: {}, notifier }
+    );
+
+    expect(outcome).toEqual({ status: "noop" });
+    expect(state.characters[0].xp).toBe(60);
+    expect(notifications).toBe(0);
+  });
 });
 
 describe("assignQuest", () => {
   it("assigns a quest to an existing character", () => {
     const state: CampaignState = {
-      quests: [{ id: "q1", title: "Rescue the merchant", status: "not_started" }],
-      characters: [{ id: "c1", name: "Alira" }],
+      quests: [{ id: "q1", title: "Rescue the merchant", status: "not_started", xpReward: 0 }],
+      characters: [{ id: "c1", name: "Alira", xp: 0 }],
+      sessions: [],
     };
     const notifier = createStateChangeNotifier();
     let notifications = 0;
@@ -261,9 +353,11 @@ describe("assignQuest", () => {
           title: "Rescue the merchant",
           status: "not_started",
           assignedCharacterId: "c1",
+          xpReward: 0,
         },
       ],
-      characters: [{ id: "c1", name: "Alira" }],
+      characters: [{ id: "c1", name: "Alira", xp: 0 }],
+      sessions: [],
     };
     const notifier = createStateChangeNotifier();
     let notifications = 0;
@@ -287,12 +381,14 @@ describe("assignQuest", () => {
           title: "Rescue the merchant",
           status: "not_started",
           assignedCharacterId: "c1",
+          xpReward: 0,
         },
       ],
       characters: [
-        { id: "c1", name: "Alira" },
-        { id: "c2", name: "Borin" },
+        { id: "c1", name: "Alira", xp: 0 },
+        { id: "c2", name: "Borin", xp: 0 },
       ],
+      sessions: [],
     };
     const notifier = createStateChangeNotifier();
 
@@ -309,7 +405,8 @@ describe("assignQuest", () => {
   it("rejects assigning a quest that does not exist", () => {
     const state: CampaignState = {
       quests: [],
-      characters: [{ id: "c1", name: "Alira" }],
+      characters: [{ id: "c1", name: "Alira", xp: 0 }],
+      sessions: [],
     };
     const notifier = createStateChangeNotifier();
 
@@ -327,8 +424,9 @@ describe("assignQuest", () => {
 
   it("rejects assigning to a character that does not exist", () => {
     const state: CampaignState = {
-      quests: [{ id: "q1", title: "Rescue the merchant", status: "not_started" }],
+      quests: [{ id: "q1", title: "Rescue the merchant", status: "not_started", xpReward: 0 }],
       characters: [],
+      sessions: [],
     };
     const notifier = createStateChangeNotifier();
 

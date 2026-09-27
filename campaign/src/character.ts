@@ -1,9 +1,9 @@
 /**
  * Campaign application layer — Character.
  *
- * Deliberately minimal: just enough identity for a quest to be
- * assigned to someone. No stats, no XP, no inventory — nothing here
- * yet requires them.
+ * Deliberately minimal: identity plus XP, which is exactly as much as
+ * completeQuest granting XP requires. No stats, no inventory, no
+ * leveling yet — nothing has needed them.
  */
 
 import type { Operation } from "../../src/core/operation";
@@ -12,6 +12,7 @@ import type { CampaignState, CampaignDependencies } from "./state";
 export interface Character {
   id: string;
   name: string;
+  xp: number;
 }
 
 function findCharacter(
@@ -47,7 +48,7 @@ export const createCharacter: Operation<
   }
 
   context.state.mutate((state) => {
-    state.characters.push({ id: request.id, name: request.name });
+    state.characters.push({ id: request.id, name: request.name, xp: 0 });
   });
 
   return { status: "success" };

@@ -5,14 +5,15 @@
  * mechanisms (Operation, Outcome) but knows nothing about Obsidian and
  * nothing about any other application.
  *
- * Now includes one relationship — a quest can be assigned to a
- * character — added because assignQuest is the smallest real slice
- * that forces an answer on identity/relationships, not because a
- * relationship model was designed in advance.
+ * Includes one relationship (a quest can be assigned to a character)
+ * and one cross-entity mutation (completing an assigned quest grants
+ * its xpReward to that character, inside the same execute() call).
+ * Both were added because a real next step forced them, not because
+ * they were designed in advance.
  *
  * Deliberately excluded still (not because they're unimportant, but
  * because nothing yet requires them):
- *   - sessions, XP, levels
+ *   - sessions, levels
  *   - persistence
  *   - identity beyond a plain string id supplied by the caller
  *   - un-assigning a quest (nothing has needed it yet)
@@ -32,6 +33,7 @@ export interface Quest {
   title: string;
   status: QuestStatus;
   assignedCharacterId?: string;
+  xpReward: number;
 }
 
 function findQuest(state: CampaignState, id: string): Quest | undefined {
@@ -43,6 +45,7 @@ function findQuest(state: CampaignState, id: string): Quest | undefined {
 export type CreateQuestRequest = {
   id: string;
   title: string;
+  xpReward?: number;
 };
 
 export type CreateQuestDetails = {
@@ -68,6 +71,7 @@ export const createQuest: Operation<
       id: request.id,
       title: request.title,
       status: "not_started",
+      xpReward: request.xpReward ?? 0,
     });
   });
 
@@ -146,8 +150,19 @@ export const completeQuest: Operation<
 
   context.state.mutate((state) => {
     const target = findQuest(state, request.id);
-    if (target) {
-      target.status = "completed";
+    if (!target) {
+      return;
+    }
+
+    target.status = "completed";
+
+    if (target.assignedCharacterId) {
+      const character = state.characters.find(
+        (c) => c.id === target.assignedCharacterId
+      );
+      if (character) {
+        character.xp += target.xpReward;
+      }
     }
   });
 

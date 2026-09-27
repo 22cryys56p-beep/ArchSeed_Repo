@@ -1,10 +1,15 @@
 /**
  * Campaign application layer — Session.
  *
- * Smallest real unit of "record a session": what happened, when.
- * Deliberately not yet linked to quests or characters — nothing has
- * required that link yet, and it shouldn't be added until something
- * does.
+ * A session now records what actually happened: which characters
+ * were there, which quests it touched, plus the date/summary.
+ *
+ * This is a different shape than assignQuest's relationship —
+ * assignQuest was one quest to at most one character (a single
+ * optional field); a session can touch several quests and several
+ * characters (array membership), so recordCharacterInSession and
+ * recordQuestInSession add to a list rather than replace a single
+ * value.
  */
 
 import type { Operation } from "../../src/core/operation";
@@ -14,6 +19,8 @@ export interface Session {
   id: string;
   date: string;
   summary: string;
+  characterIds: string[];
+  questIds: string[];
 }
 
 function findSession(
@@ -58,7 +65,101 @@ export const createSession: Operation<
       id: request.id,
       date: request.date,
       summary: request.summary,
+      characterIds: [],
+      questIds: [],
     });
+  });
+
+  return { status: "success" };
+};
+
+// ---- recordCharacterInSession --------------------------------------------
+
+export type RecordCharacterInSessionRequest = {
+  sessionId: string;
+  characterId: string;
+};
+
+export type RecordCharacterInSessionDetails = {
+  reason: "session_not_found" | "character_not_found";
+};
+
+export const recordCharacterInSession: Operation<
+  RecordCharacterInSessionRequest,
+  CampaignState,
+  CampaignDependencies,
+  RecordCharacterInSessionDetails
+> = (request, context) => {
+  const state = context.state.get();
+  const session = findSession(state, request.sessionId);
+
+  if (!session) {
+    return { status: "invalid", details: { reason: "session_not_found" } };
+  }
+
+  const characterExists = state.characters.some(
+    (character) => character.id === request.characterId
+  );
+
+  if (!characterExists) {
+    return { status: "invalid", details: { reason: "character_not_found" } };
+  }
+
+  if (session.characterIds.includes(request.characterId)) {
+    return { status: "noop" };
+  }
+
+  context.state.mutate((s) => {
+    const target = findSession(s, request.sessionId);
+    if (target) {
+      target.characterIds.push(request.characterId);
+    }
+  });
+
+  return { status: "success" };
+};
+
+// ---- recordQuestInSession -------------------------------------------------
+
+export type RecordQuestInSessionRequest = {
+  sessionId: string;
+  questId: string;
+};
+
+export type RecordQuestInSessionDetails = {
+  reason: "session_not_found" | "quest_not_found";
+};
+
+export const recordQuestInSession: Operation<
+  RecordQuestInSessionRequest,
+  CampaignState,
+  CampaignDependencies,
+  RecordQuestInSessionDetails
+> = (request, context) => {
+  const state = context.state.get();
+  const session = findSession(state, request.sessionId);
+
+  if (!session) {
+    return { status: "invalid", details: { reason: "session_not_found" } };
+  }
+
+  const questExists = state.quests.some(
+    (quest) => quest.id === request.questId
+  );
+
+  if (!questExists) {
+    return { status: "invalid", details: { reason: "quest_not_found" } };
+  }
+
+  if (session.questIds.includes(request.questId)) {
+    return { status: "noop" };
+  }
+
+  context.state.mutate((s) => {
+    const target = findSession(s, request.sessionId);
+    if (target) {
+      target.questIds.push(request.questId);
+    }
   });
 
   return { status: "success" };

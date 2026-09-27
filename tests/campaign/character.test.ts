@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { execute } from "../../src/core/execution";
 import { createStateChangeNotifier } from "../../src/core/notification";
-import { createCharacter } from "../../campaign/src/character";
+import { createCharacter, resolveCharacterLevel } from "../../campaign/src/character";
 import type { CampaignState } from "../../campaign/src/state";
 
 function emptyCampaign(): CampaignState {
@@ -68,5 +68,28 @@ describe("createCharacter", () => {
     });
     expect(state.characters).toHaveLength(0);
     expect(notifications).toBe(0);
+  });
+});
+describe("resolveCharacterLevel", () => {
+  it("is level 1 at zero xp", () => {
+    expect(resolveCharacterLevel({ id: "c1", name: "Alira", xp: 0 })).toBe(1);
+  });
+
+  it("is level 1 just below the level-2 threshold", () => {
+    expect(resolveCharacterLevel({ id: "c1", name: "Alira", xp: 99 })).toBe(1);
+  });
+
+  it("is level 2 exactly at the threshold", () => {
+    expect(resolveCharacterLevel({ id: "c1", name: "Alira", xp: 100 })).toBe(2);
+  });
+
+  it("is level 3 at 200 xp", () => {
+    expect(resolveCharacterLevel({ id: "c1", name: "Alira", xp: 200 })).toBe(3);
+  });
+
+  it("does not mutate the character it resolves from", () => {
+    const character = { id: "c1", name: "Alira", xp: 150 };
+    resolveCharacterLevel(character);
+    expect(character).toEqual({ id: "c1", name: "Alira", xp: 150 });
   });
 });
